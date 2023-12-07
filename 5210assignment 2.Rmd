@@ -1,0 +1,264 @@
+---
+title: "5210assignment2"
+output: 
+  pdf_document: 
+date: "2023-11-27"
+---
+
+# Q1:
+
+```{r import data}
+data1 <- read.table(header = TRUE, text="
+patient age acid x-ray size grade y
+1 66 0.48 0 0 0 0
+2 68 0.56 0 0 0 0
+3 66 0.50 0 0 0 0
+4 56 0.52 0 0 0 0
+5 58 0.50 0 0 0 0
+6 60 0.49 0 0 0 0
+7 65 0.46 1 0 0 0
+8 60 0.62 1 0 0 0
+9 50 0.56 0 0 1 1
+10 49 0.55 1 0 0 0
+11 61 0.62 0 0 0 0
+12 58 0.71 0 0 0 0
+13 51 0.65 0 0 0 0
+14 67 0.67 1 0 1 1
+15 67 0.47 0 0 1 0
+16 51 0.49 0 0 0 0
+17 56 0.50 0 0 1 0
+18 60 0.78 0 0 0 0
+19 52 0.83 0 0 0 0
+20 56 0.98 0 0 0 0
+21 67 0.52 0 0 0 0
+22 63 0.75 0 0 0 0
+23 59 0.99 0 0 1 1
+24 64 1.87 0 0 0 0
+25 61 1.36 1 0 0 1
+26 56 0.82 0 0 0 1
+27 64 0.40 0 1 1 0
+28 61 0.50 0 1 0 0
+29 64 0.50 0 1 1 0
+30 63 0.40 0 1 0 0
+31 52 0.55 0 1 1 0
+32 66 0.59 0 1 1 0
+33 58 0.48 1 1 0 1
+34 57 0.51 1 1 1 1
+35 65 0.49 0 1 0 1
+36 65 0.48 0 1 1 0
+37 59 0.63 1 1 1 0
+38 61 1.02 0 1 0 0
+39 53 0.76 0 1 0 0
+40 67 0.95 0 1 0 0
+41 53 0.66 0 1 1 0
+42 65 0.84 1 1 1 1
+43 50 0.81 1 1 1 1
+44 60 0.76 1 1 1 1
+45 45 0.70 0 1 1 1
+46 56 0.78 1 1 1 1
+47 46 0.70 0 1 0 1
+48 67 0.67 0 1 0 1
+49 63 0.82 0 1 0 1
+50 57 0.67 0 1 1 1
+51 51 0.72 1 1 0 1
+52 64 0.89 1 1 0 1
+53 68 1.26 1 1 1 1
+")
+
+```
+
+```{r delete useless variable}
+#delete useless variable
+data1$patient <- NULL
+```
+
+(a)Show the results from each of the 4 steps in table format leading to the selection of your final model. Include the variable tested, the deviance and df.
+
+## Step1:
+
+```{r Step 1}
+#Fit single-variable model
+variables1 <- c("age", "acid", "x.ray", "size", "grade")
+single_var_models <- lapply(variables1, function(var) {
+                     glm(formula = paste("y ~", var), data = data1, family = binomial)
+})
+print(single_var_models)
+```
+
+```{r step1 Compare deviance}
+# Compare deviance of each model
+null_model <- glm(y ~ 1, data = data1, family = binomial)
+single_var_deviance <- sapply(single_var_models, function(model) {
+                       deviance(model) - deviance(null_model)
+})
+print(single_var_deviance)
+```
+
+We can perform Square Root Transformation, Square Transformation and Log transformatin on variables(age and acid).
+
+```{r step1 transformation & uni-variable model, echo=TRUE, message=FALSE}
+# SRT
+data1$sqrt_age <- sqrt(data1$age)
+data1$sqrt_acid <- sqrt(data1$acid)
+# ST
+data1$sq_age <- data1$age^2
+data1$sq_acid <- data1$acid^2
+#Log
+data1$log_age <- log(data1$age )
+data1$log_acid <- log(data1$acid )
+
+
+#Fit single variable model
+variables2 <- c("sqrt_age", "sqrt_acid", "sq_age", "sq_acid", "log_age", "log_acid")
+single_var_models2 <- lapply(variables2, function(var) {
+                     glm(formula = paste("y ~", var), data = data1, family = binomial)
+})
+print(single_var_models2)
+
+```
+
+```{r compare deviance}
+# Compare deviance of each model
+null_model <- glm(y ~ 1, data = data1, family = binomial)
+single_var_deviance2 <- sapply(single_var_models2, function(model) {
+                       deviance(model) - deviance(null_model)
+})
+print(single_var_deviance2)
+print(null_model)
+```
+
+## Step2:
+
+```{r step2}
+variables3 <- c("log_acid", "x.ray", "size", "grade")
+formula <- as.formula(paste("y ~", paste(variables3, collapse = " + ")))
+multi_var_model1 <- glm(formula, family = binomial(link = "logit"), data = data1)
+
+print(multi_var_model1)
+```
+
+```{r reduced_model}
+for (variable in variables3) {
+   reduced_formula <- as.formula(paste("y ~", paste(setdiff(variables3, variable),
+                                                    collapse = " + ")))
+
+reduced_model <- glm(reduced_formula, family = binomial(link = "logit"), data = data1)
+
+print(reduced_model)
+
+}
+```
+
+```{r reduced model1}
+variables4 <- c("x.ray", "size", "log_acid")
+formula1 <- as.formula(paste("y ~", paste(variables4, collapse = " + ")))
+multi_var_model2 <- glm(formula1, family = binomial(link = "logit"), data = data1)
+
+print(multi_var_model2)
+for (variable in variables4) {
+   reduced_formula <- as.formula(paste("y ~", paste(setdiff(variables4, variable),
+                                                    collapse = " + ")))
+
+reduced_model1 <- glm(reduced_formula, family = binomial(link = "logit"), data = data1)
+
+print(reduced_model1)
+}
+```
+
+## step3:
+
+```{r}
+inter_model <- glm( y ~ log_acid + x.ray + size ,
+                     family = binomial, data = data1)
+print(inter_model)
+```
+
+```{r interaction 3}
+inter_model1 <- glm( y ~ log_acid + x.ray + size + 
+                       log_acid * x.ray * size,
+                     family = binomial, data = data1)
+print(inter_model1)
+```
+
+```{r}
+inter_model2 <- glm( y ~ log_acid + x.ray + size + 
+    x.ray * size + x.ray * log_acid + size * log_acid
+    , family = binomial, data = data1)
+print(inter_model2)
+
+inter_model2_1 <- glm( y ~ log_acid + x.ray + size + 
+    x.ray * size 
+    , family = binomial, data = data1)
+print(inter_model2_1)
+
+inter_model2_2 <- glm( y ~ log_acid + x.ray + size + 
+     x.ray * log_acid 
+    , family = binomial, data = data1)
+print(inter_model2_2)
+
+inter_model2_3 <- glm( y ~ log_acid + x.ray + size + 
+     size * log_acid
+    , family = binomial, data = data1)
+print(inter_model2_3)
+
+inter_model2_4 <- glm( y ~ log_acid + x.ray + size + 
+     age
+    , family = binomial, data = data1)
+print(inter_model2_4)
+```
+
+```{r}
+inter_model3_1 <- glm( y ~ log_acid + x.ray + size + 
+     x.ray * log_acid + size * log_acid
+    , family = binomial, data = data1)
+print(inter_model3_1)
+
+inter_model3_2 <- glm( y ~ log_acid + x.ray + size + 
+    x.ray * size + size * log_acid
+    , family = binomial, data = data1)
+print(inter_model3_2)
+
+inter_model3_3 <- glm( y ~ log_acid + x.ray + size + 
+    x.ray * size + x.ray * log_acid 
+    , family = binomial, data = data1)
+print(inter_model3_3)
+```
+
+# Q4
+
+a)  Write a SAS or R program that a) inputs the data into SAS or R and b) fits a cumulative probability model where the only predictor is political party
+
+```{r input data}
+# Library package
+library(MASS)
+library(dplyr)
+library(tidyr)
+
+# Create data frame
+data4 <- data.frame(
+  Gender = rep(c("Female", "Male"), each = 2),
+  Party = rep(c("Democratic", "Republican"), each = 1),
+  VeryLiberal = c(44, 18, 36, 12),
+  SlightlyLiberal = c(47, 28, 34, 18),
+  Moderate = c(118, 86, 53, 62),
+  SlightlyConservative = c(23, 39, 18, 45),
+  VeryConservative = c(32, 48, 23, 51)
+)
+
+
+```
+
+```{r}
+long_data4 <- data4 %>%
+  pivot_longer(cols = VeryLiberal:VeryConservative,
+               names_to = "Ideology",
+               values_to = "Count") %>%
+  mutate(PartyInd = as.numeric(Party == "Democratic"),
+         Ideology = factor(Ideology, levels = c("VeryLiberal", "SlightlyLiberal", "Moderate", "SlightlyConservative", "VeryConservative"), ordered = TRUE))
+
+# Fit cumulative logit model
+model <- polr(Ideology ~ PartyInd, weights = Count, data = long_data4, Hess=TRUE)
+summary(model)
+```
+
+# 
